@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Laboratorio – Encoder 2 Fases + VFD ABB + PLC Delta SE</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        :root {
+            --primary: #1a1a2e;
+            --primary-light: #16213e;
+            --accent: #0f3460;
+            --highlight: #e94560;
+            --accent-blue: #4facfe;
+            --accent-cyan: #00d2ff;
+            --accent-green: #00b894;
+            --accent-orange: #fdcb6e;
+            --accent-purple: #a29bfe;
+            --accent-red: #ff7675;
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --text: #2d3436;
+            --text-light: #636e72;
+            --border: #dfe6e9;
+            --shadow: 0 10px 40px rgba(0,0,0,0.08);
+            --shadow-lg: 0 20px 60px rgba(0,0,0,0.12);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+
+        .cover {
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+            background: linear-gradient(135deg, #0c0c1d 0%, #1a1a3e 30%, #0f3460 60%, #16213e 100%);
+            color: #fff; padding: 3rem 2rem; position: relative; overflow: hidden;
+        }
+        .cover::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at 30% 50%, rgba(233,69,96,0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(79,172,254,0.1) 0%, transparent 50%);
+            animation: coverFloat 20s ease-in-out infinite;
+        }
+        @keyframes coverFloat {
+            0%, 100% { transform: translate(0,0) rotate(0deg); }
+            50% { transform: translate(-2%,2%) rotate(1deg); }
+        }
+        .cover-content { position: relative; z-index: 1; }
+        .cover-badge {
+            display: inline-block; background: linear-gradient(135deg, var(--highlight), #c0392b);
+            padding: 0.4rem 1.5rem; border-radius: 50px; font-size: 0.8rem; font-weight: 600;
+            letter-spacing: 3px; text-transform: uppercase; margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(233,69,96,0.4);
+        }
+        .cover h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; line-height: 1.15; margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff 0%, #e0e0ff 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .cover h2 { font-size: clamp(1rem, 2.5vw, 1.4rem); font-weight: 300; opacity: 0.7; margin-bottom: 3rem; max-width: 700px; }
+        .cover-stats { display: flex; gap: 3rem; justify-content: center; flex-wrap: wrap; }
+        .cover-stat { text-align: center; }
+        .cover-stat .num {
+            font-size: 2.5rem; font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .cover-stat .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; }
+
+        .slide {
+            max-width: 960px; margin: 3rem auto;
+            background: var(--card-bg); border-radius: 16px; padding: 3rem 3.5rem;
+            box-shadow: var(--shadow); position: relative; overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .slide:hover { box-shadow: var(--shadow-lg); }
+        .slide::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+        .slide.act1::before { background: linear-gradient(90deg, #4facfe, #00d2ff); }
+        .slide.act2::before { background: linear-gradient(90deg, #e94560, #ff6b6b); }
+        .slide.act3::before { background: linear-gradient(90deg, #00b894, #55efc4); }
+        .slide.act4::before { background: linear-gradient(90deg, #a29bfe, #6c5ce7); }
+        .slide.act5::before { background: linear-gradient(90deg, #fdcb6e, #f39c12); }
+        .slide.act6::before { background: linear-gradient(90deg, #fd79a8, #e84393); }
+        .slide.act7::before { background: linear-gradient(90deg, #00cec9, #81ecec); }
+
+        .slide-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+        .act-number {
+            min-width: 56px; height: 56px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; font-weight: 800; color: #fff;
+        }
+        .act1 .act-number { background: linear-gradient(135deg, #4facfe, #00d2ff); }
+        .act2 .act-number { background: linear-gradient(135deg, #e94560, #ff6b6b); }
+        .act3 .act-number { background: linear-gradient(135deg, #00b894, #55efc4); }
+        .act4 .act-number { background: linear-gradient(135deg, #a29bfe, #6c5ce7); }
+        .act5 .act-number { background: linear-gradient(135deg, #fdcb6e, #f39c12); }
+        .act6 .act-number { background: linear-gradient(135deg, #fd79a8, #e84393); }
+        .act7 .act-number { background: linear-gradient(135deg, #00cec9, #81ecec); }
+        .slide h2 { font-size: 1.6rem; font-weight: 700; color: var(--primary); line-height: 1.3; }
+        .slide h3 {
+            font-size: 1.15rem; font-weight: 600; color: var(--accent);
+            margin: 2rem 0 0.8rem 0; padding-left: 0.8rem; border-left: 3px solid var(--accent-blue);
+        }
+        .slide p, .slide li { font-size: 0.95rem; color: var(--text); }
+        .slide ul, .slide ol { margin: 0.5rem 0 1rem 0; }
+        .slide li { margin-bottom: 0.4rem; padding-left: 0.3rem; }
+        .slide li::marker { color: var(--accent-blue); }
+
+        .table-container { overflow-x: auto; margin: 1.2rem 0; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.06); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.88rem; background: #fff; border-radius: 12px; overflow: hidden; }
+        thead th {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: #fff; font-weight: 600; padding: 0.9rem 1rem; text-align: left;
+            letter-spacing: 0.5px; font-size: 0.82rem; text-transform: uppercase;
+        }
+        tbody td { padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; }
+        tbody tr { transition: background 0.2s ease; }
+        tbody tr:hover { background: #f8f9ff; }
+        tbody tr:nth-child(even) { background: #fafbfc; }
+        tbody tr:nth-child(even):hover { background: #f0f2ff; }
+        .table-highlight td { background: #fff3cd !important; font-weight: 600; }
+
+        .img-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 1.5rem; margin: 1.5rem 0;
+        }
+        .img-card {
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+            border: 1px solid #e8ecf4; border-radius: 14px; overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .img-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(79,172,254,0.15); }
+        .img-card img {
+            width: 100%; height: auto; display: block;
+            border-bottom: 1px solid #e8ecf4;
+            background: #e8ecf4;
+            min-height: 220px;
+            object-fit: cover;
+        }
+        .img-card .caption { padding: 1rem 1.2rem; text-align: center; }
+        .img-card .caption .file-tag {
+            display: inline-block; background: #e8ecf4; padding: 0.2rem 0.6rem; border-radius: 6px;
+            font-size: 0.75rem; font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-blue); font-weight: 600; margin-bottom: 0.4rem;
+        }
+        .img-card .caption .desc { font-size: 0.82rem; color: var(--text-light); }
+
+        .callout {
+            border-radius: 12px; padding: 1.2rem 1.5rem; margin: 1.5rem 0;
+            font-size: 0.9rem; display: flex; gap: 0.8rem; align-items: flex-start;
+        }
+        .callout .callout-icon { font-size: 1.4rem; min-width: 28px; text-align: center; }
+        .callout .callout-text { flex: 1; }
+        .callout .callout-text strong { display: block; margin-bottom: 0.2rem; }
+        .callout.info { background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-left: 4px solid #4facfe; color: #1a3a5c; }
+        .callout.warning { background: linear-gradient(135deg, #fff8e1, #fff3cd); border-left: 4px solid #fdcb6e; color: #664d03; }
+        .callout.danger { background: linear-gradient(135deg, #ffeaea, #ffd5d5); border-left: 4px solid #e94560; color: #6b1525; }
+        .callout.success { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border-left: 4px solid #00b894; color: #1b5e20; }
+        .callout.purple { background: linear-gradient(135deg, #f0edff, #e0ddff); border-left: 4px solid #a29bfe; color: #3d3678; }
+
+        .formula-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+            border-radius: 14px; padding: 2rem; margin: 1.5rem 0;
+            text-align: center; color: #fff; position: relative; overflow: hidden;
+        }
+        .formula-card::before {
+            content: ''; position: absolute; top: -30%; right: -20%;
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, rgba(233,69,96,0.15), transparent 70%); border-radius: 50%;
+        }
+        .formula-card .formula-line {
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            font-size: 1.3rem; margin: 0.5rem 0; position: relative;
+        }
+        .formula-card .formula-label {
+            font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase;
+            opacity: 0.5; margin-bottom: 1rem;
+        }
+        .formula-card .formula-desc {
+            font-size: 0.82rem; opacity: 0.7; margin-top: 1rem;
+            max-width: 500px; margin-left: auto; margin-right: auto;
+        }
+
+        .step-list { list-style: none; counter-reset: step; margin-left: 0; padding: 0; }
+        .step-list li {
+            counter-increment: step; padding: 1rem 1rem 1rem 4rem;
+            position: relative; border-bottom: 1px solid #f0f0f0;
+            background: linear-gradient(135deg, #fafbfc, #fff);
+            border-radius: 10px; margin-bottom: 0.5rem; transition: all 0.2s ease;
+        }
+        .step-list li:hover { background: #f0f2ff; transform: translateX(4px); }
+        .step-list li::before {
+            content: counter(step); position: absolute; left: 0.8rem; top: 50%;
+            transform: translateY(-50%); width: 2.2rem; height: 2.2rem;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            color: #fff; border-radius: 50%; display: flex;
+            justify-content: center; align-items: center; font-size: 0.8rem;
+            font-weight: 700; box-shadow: 0 4px 12px rgba(79,172,254,0.3);
+        }
+        .step-list li:last-child { border-bottom: none; }
+
+        .badge {
+            display: inline-block; padding: 0.15rem 0.6rem; border-radius: 6px;
+            font-size: 0.78rem; font-weight: 600; letter-spacing: 0.5px;
+        }
+        .badge-blue { background: #e3f2fd; color: #1565c0; }
+        .badge-green { background: #e8f5e9; color: #2e7d32; }
+        .badge-red { background: #ffeaea; color: #c62828; }
+        .badge-yellow { background: #fff8e1; color: #f57f17; }
+        .badge-purple { background: #f0edff; color: #5e35b1; }
+        .badge-dark { background: #2d3436; color: #fff; }
+
+        .text-highlight {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            padding: 0.1rem 0.5rem; border-radius: 4px; font-weight: 600;
+        }
+        .text-blue {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            padding: 0.1rem 0.5rem; border-radius: 4px; font-weight: 600; color: #1565c0;
+        }
+        .text-green {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            padding: 0.1rem 0.5rem; border-radius: 4px; font-weight: 600; color: #2e7d32;
+        }
+        .text-red {
+            background: linear-gradient(135deg, #ffeaea, #ffcdd2);
+            padding: 0.1rem 0.5rem; border-radius: 4px; font-weight: 600; color: #c62828;
+        }
+
+        .info-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+        .info-card {
+            background: linear-gradient(135deg, #f8f9ff, #fff);
+            border: 1px solid #e8ecf4; border-radius: 12px; padding: 1.2rem;
+            text-align: center; transition: all 0.3s ease;
+        }
+        .info-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .info-card .icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .info-card .card-title { font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-bottom: 0.3rem; }
+        .info-card .card-value {
+            font-size: 1.3rem; font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .info-card .card-desc { font-size: 0.75rem; color: var(--text-light); margin-top: 0.3rem; }
+
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1rem 0; }
+        .col-box {
+            background: linear-gradient(135deg, #fafbfc, #fff);
+            border: 1px solid #e8ecf4; border-radius: 12px; padding: 1.5rem;
+        }
+        .col-box h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem; }
+
+        .progress-bar {
+            height: 8px; background: #e8ecf4; border-radius: 4px;
+            margin: 0.5rem 0; overflow: hidden;
+        }
+        .progress-bar .fill { height: 100%; border-radius: 4px; }
+        .fill-23 { width: 23%; background: linear-gradient(90deg, #a29bfe, #6c5ce7); }
+        .fill-67 { width: 67%; background: linear-gradient(90deg, #00b894, #55efc4); }
+        .fill-100 { width: 100%; background: linear-gradient(90deg, #e94560, #ff6b6b); }
+
+        .checklist { list-style: none; padding: 0; margin: 0; }
+        .checklist li {
+            padding: 0.8rem 0 0.8rem 2.8rem; position: relative;
+            border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; font-size: 0.9rem;
+        }
+        .checklist li::before {
+            content: '☐'; position: absolute; left: 0.6rem;
+            font-size: 1.2rem; color: var(--accent-blue);
+        }
+        .checklist li .file-tag { margin-left: auto; }
+
+        .separator { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 1.5rem 0; }
+
+        .nav-bar {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(255,255,255,0.92); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 0.8rem 2rem; display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;
+        }
+        .nav-bar a {
+            text-decoration: none; font-size: 0.72rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 1px;
+            padding: 0.4rem 0.9rem; border-radius: 8px; color: var(--text-light);
+            transition: all 0.2s ease;
+        }
+        .nav-bar a:hover { background: #f0f2ff; color: var(--accent-blue); }
+
+        footer {
+            text-align: center; padding: 3rem 2rem; font-size: 0.8rem;
+            color: rgba(255,255,255,0.5);
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        }
+
+        @media (max-width: 700px) {
+            .two-col { grid-template-columns: 1fr; }
+            .img-grid { grid-template-columns: 1fr; }
+            .slide { padding: 2rem 1.5rem; margin: 1.5rem 1rem; }
+        }
+        @media print {
+            .slide { break-inside: avoid; border: none; margin: 1rem 0; box-shadow: none; }
+            body { background: #fff; }
+            .cover { min-height: auto; padding: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav-bar">
+    <a href="#cover">🏠 Inicio</a>
+    <a href="#act1">⚙️ Act. 1</a>
+    <a href="#act2">📈 Act. 2</a>
+    <a href="#act3">🔌 Act. 3</a>
+    <a href="#act4">🔄 Act. 4</a>
+    <a href="#act5">🔢 Act. 5</a>
+    <a href="#act6">⏱️ Act. 6</a>
+    <a href="#act7">📊 Act. 7</a>
+    <a href="#summary">✅ Resumen</a>
+</nav>
+
+<!-- ==================== COVER ==================== -->
+<section class="cover" id="cover">
+    <div class="cover-content">
+        <div class="cover-badge">Sesión 1</div>
+        <h1>Encoder Incremental 2 Fases<br>Medición de Velocidad y Dirección</h1>
+        <h2>Motor trifásico con VFD ABB + PLC Delta SE · Análisis del encoder, lectura, escalado y tiempos de respuesta</h2>
+        <div class="cover-stats">
+            <div class="cover-stat"><div class="num">7</div><div class="label">Actividades</div></div>
+            <div class="cover-stat"><div class="num">11</div><div class="label">Imágenes</div></div>
+            <div class="cover-stat"><div class="num">4</div><div class="label">Bases de Tiempo</div></div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== OBJETIVOS ==================== -->
+<section class="slide" id="objectives">
+    <div class="slide-header">
+        <div class="act-number" style="background: linear-gradient(135deg, var(--accent), var(--primary));">🎯</div>
+        <h2>Objetivos de la Práctica</h2>
+    </div>
+    <ol class="step-list">
+        <li><strong>Identificar físicamente</strong> el encoder incremental de 24 V de 2 fases (A y B) y comprender su conexionado al PLC.</li>
+        <li><strong>Visualizar en osciloscopio</strong> las señales A y B, comprendiendo el desfase de 90° para determinar el sentido de giro.</li>
+        <li><strong>Conectar el encoder al PLC Delta SE</strong> (entradas X0 y X1) y configurar la instrucción <span class="badge badge-dark">SPD</span>.</li>
+        <li><strong>Implementar lógica de contactos</strong> con detección de flancos para identificar la dirección de giro.</li>
+        <li><strong>Escalar la lectura SPD</strong> para obtener <span class="badge badge-blue">RPS</span> y <span class="badge badge-green">RPM</span> con bases de tiempo de 1000, 700, 300 y 200 ms.</li>
+        <li><strong>Medir el tiempo de establecimiento</strong> de la velocidad nominal del motor trifásico.</li>
+        <li><strong>Registrar los tiempos</strong> al alcanzar el <span class="badge badge-purple">67 %</span> y <span class="badge badge-yellow">23 %</span> de la velocidad nominal (preparación para sintonía PID por método de los dos puntos de Smith, Sesión 2).</li>
+    </ol>
+</section>
+
+<!-- ==================== ACT 1 — HARDWARE ==================== -->
+<section class="slide act1" id="act1">
+    <div class="slide-header">
+        <div class="act-number">01</div>
+        <h2>Forma Física del Encoder Incremental 24 V — 2 Fases</h2>
+    </div>
+
+    <h3>📋 Descripción General</h3>
+    <p>El encoder incremental genera <span class="text-blue">dos señales cuadradas</span> (<strong>Fase A</strong> y <strong>Fase B</strong>) desfasadas 90° eléctricos. Adicionalmente suele incluir una señal de referencia <strong>Fase Z</strong> (pulso único por vuelta) y líneas de alimentación.</p>
+
+    <div class="info-cards">
+        <div class="info-card">
+            <div class="icon">⚡</div>
+            <div class="card-title">Alimentación</div>
+            <div class="card-value">24 V DC</div>
+            <div class="card-desc">Rango típico 10–30 V DC</div>
+        </div>
+        <div class="info-card">
+            <div class="icon">📐</div>
+            <div class="card-title">PPR</div>
+            <div class="card-value">500–1024</div>
+            <div class="card-desc">Pulsos por revolución</div>
+        </div>
+        <div class="info-card">
+            <div class="icon">🔁</div>
+            <div class="card-title">Resolución ×4</div>
+            <div class="card-value">2000–4096</div>
+            <div class="card-desc">Modo cuádruple (AB ambos flancos)</div>
+        </div>
+        <div class="info-card">
+            <div class="icon">📡</div>
+            <div class="card-title">Frecuencia Máx.</div>
+            <div class="card-value">100–300 kHz</div>
+            <div class="card-desc">Respuesta del encoder</div>
+        </div>
+    </div>
+
+    <h3>🔌 Identificación de Terminales</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr><th>Terminal</th><th>Color Típico</th><th>Función</th><th>Conexión</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">VCC</span></td><td>🟤 Marrón</td><td>+24 V DC</td><td>Fuente 24 V</td></tr>
+                <tr><td><span class="badge badge-red">GND</span></td><td>🔵 Azul</td><td>0 V (masa)</td><td>Fuente 0 V / COM PLC</td></tr>
+                <tr><td><span class="badge badge-dark">CH-A</span></td><td>⚫ Negro</td><td>Fase A (canal A)</td><td><strong>X0</strong> (entrada HSC)</td></tr>
+                <tr><td><span class="badge badge-dark">CH-B</span></td><td>⚪ Blanco</td><td>Fase B (canal B)</td><td><strong>X1</strong> (entrada HSC)</td></tr>
+                <tr><td><span class="badge badge-purple">CH-Z</span></td><td>🟢 Verde</td><td>Fase Z (índice)</td><td><strong>X2</strong> (opcional)</td></tr>
+                <tr><td><span class="badge badge-yellow">SHLD</span></td><td>🛡️ Malla</td><td>Tierra de pantalla</td><td>Tierra del gabinete</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout warning">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-text">
+            <strong>Importante</strong>
+            Verificar el código de colores en la hoja de datos del encoder específico, ya que puede variar según el fabricante (Omron, Autonics, Pepperl+Fuchs, etc.).
+        </div>
+    </div>
+
+    <div class="img-grid">
+        <div class="img-card">
+            <img src="1.PNG" alt="Foto del encoder montado en el motor con bornes etiquetados" width="500" height="300">
+            <div class="caption">
+                <div class="file-tag">1.PNG</div>
+                <p class="desc">Foto del encoder montado en el motor. Etiquetar bornes visibles.</p>
+            </div>
+        </div>
+        <div class="img-card">
+            <img src="2.PNG" alt="Placa de características del encoder con PPR, VCC y modelo" width="500" height="300">
+            <div class="caption">
+                <div class="file-tag">2.PNG</div>
+                <p class="desc">Detalle de la placa de características (PPR, VCC, modelo, fabricante).</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== ACT 2 — OSCILOSCOPIO ==================== -->
+<section class="slide act2" id="act2">
+    <div class="slide-header">
+        <div class="act-number">02</div>
+        <h2>Señal del Encoder en Osciloscopio — Sentido de Giro</h2>
+    </div>
+
+    <h3>🔧 Procedimiento</h3>
+    <ol class="step-list">
+        <li>Verificar que el encoder esté correctamente alimentado a <span class="text-highlight">24 V DC</span>.</li>
+        <li>Conectar <span class="text-blue">Canal 1 → Fase A</span> y <span class="text-blue">Canal 2 → Fase B</span> del osciloscopio (referencia a GND común).</li>
+        <li>Desde el panel del <span class="badge badge-dark">VFD ABB</span>, poner en marcha el motor en sentido <span class="text-green">horario (CW)</span> a velocidad nominal.</li>
+        <li>Capturar la forma de onda y observar el <span class="text-highlight">desfase de 90°</span> entre A y B.</li>
+        <li>Detener el motor y reiniciar en sentido <span class="text-red">antihorario (CCW)</span>.</li>
+        <li>Capturar nuevamente y comparar: la relación de fase A vs B se invierte.</li>
+    </ol>
+
+    <h3>🔍 Regla de Interpretación</h3>
+    <div class="two-col">
+        <div class="col-box" style="border-top: 3px solid #00b894;">
+            <h4>✅ Giro Horario (CW)</h4>
+            <p>La <strong>Fase A adelanta a la Fase B</strong> — el flanco de subida de A ocurre <em>antes</em> que el flanco de subida de B.</p>
+            <div style="margin-top:0.8rem;">
+                <span class="badge badge-green">A ↑ antes que B ↑</span>
+                <span class="badge badge-green">CW</span>
+            </div>
+        </div>
+        <div class="col-box" style="border-top: 3px solid #e94560;">
+            <h4>🔄 Giro Antihorario (CCW)</h4>
+            <p>La <strong>Fase B adelanta a la Fase A</strong> — el flanco de subida de B ocurre <em>antes</em> que el flanco de subida de A.</p>
+            <div style="margin-top:0.8rem;">
+                <span class="badge badge-red">B ↑ antes que A ↑</span>
+                <span class="badge badge-red">CCW</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="callout info">
+        <div class="callout-icon">💡</div>
+        <div class="callout-text">
+            <strong>¿Por qué 90°?</strong>
+            El desfase de un cuarto de ciclo entre A y B permite determinar la dirección de rotación. Cuando A adelanta a B, gira en un sentido; cuando B adelanta a A, gira en el sentido contrario.
+        </div>
+    </div>
+
+    <div class="img-grid">
+        <div class="img-card">
+            <img src="3.PNG" alt="Osciloscopio mostrando señales del encoder en giro horario CW" width="500" height="300">
+            <div class="caption">
+                <div class="file-tag">3.PNG</div>
+                <p class="desc">Osciloscopio — Giro horario (CW). Señales A (CH1) y B (CH2) con desfase de 90°.</p>
+            </div>
+        </div>
+        <div class="img-card">
+            <img src="4.PNG" alt="Osciloscopio mostrando señales del encoder en giro antihorario CCW" width="500" height="300">
+            <div class="caption">
+                <div class="file-tag">4.PNG</div>
+                <p class="desc">Osciloscopio — Giro antihorario (CCW). Señales A (CH1) y B (CH2) con desfase invertido.</p>
+            </div>
+        </div>
+    </div>
+
+    <h3>📝 Tabla de Registro</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr><th>Sentido</th><th>¿Quién adelanta?</th><th>Desfase medido (µs)</th><th>Frecuencia medida (kHz)</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">CW (Horario)</span></td><td>A adelanta a B</td><td>________</td><td>________</td></tr>
+                <tr><td><span class="badge badge-red">CCW (Antihorario)</span></td><td>B adelanta a A</td><td>________</td><td>________</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ==================== ACT 3 — CONEXIÓN PLC + SPD ==================== -->
+<section class="slide act3" id="act3">
+    <div class="slide-header">
+        <div class="act-number">03</div>
+        <h2>Conexión del Encoder al PLC Delta SE e Instrucción SPD</h2>
+    </div>
+
+    <h3>🔌 Diagrama de Conexión</h3>
+    <p>Las entradas <span class="badge badge-dark">X0</span> y <span class="badge badge-dark">X1</span> del PLC Delta SE son <strong>entradas de alta velocidad</strong> (HSC) capaces de leer señales de encoder.</p>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr><th>Señal Encoder</th><th>→</th><th>Entrada PLC Delta SE</th><th>Tipo</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>Fase A</strong> (CH-A)</td><td>→</td><td><span class="text-blue">X0</span></td><td>Entrada HSC</td></tr>
+                <tr><td><strong>Fase B</strong> (CH-B)</td><td>→</td><td><span class="text-blue">X1</span></td><td>Entrada HSC</td></tr>
+                <tr><td><strong>GND</strong></td><td>→</td><td>COM del PLC</td><td>Masa común</td></tr>
+                <tr><td><strong>+24 V</strong></td><td>→</td><td>Fuente externa</td><td>Alimentación encoder</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="img-card" style="max-width: 650px; margin: 1.5rem auto;">
+        <img src="5.PNG" alt="Diagrama de cableado del encoder al PLC Delta SE en entradas X0 y X1" width="500" height="300">
+        <div class="caption">
+            <div class="file-tag">5.PNG</div>
+            <p class="desc">Diagrama de cableado Encoder → PLC Delta SE (X0, X1).</p>
+        </div>
+    </div>
+
+    <h3>⚡ Instrucción SPD (Speed Detection)</h3>
+    <div class="callout info">
+        <div class="callout-icon">💡</div>
+        <div class="callout-text">
+            <strong>Sintaxis:</strong> <code>SPD  X0  T  D</code>
+            <br>Cuenta pulsos en la entrada X0 durante <strong>T milisegundos</strong> y almacena el resultado en el registro <strong>D</strong>. Se utilizan 4 bases de tiempo distintas (1000, 700, 300 y 200 ms) para comparar resolución vs. velocidad de actualización.
+        </div>
+    </div>
+
+    <h3>⚙️ Configuración de Entradas de Alta Velocidad</h3>
+    <p>Configurar el modo de conteo <span class="text-highlight">AB cuádruple (×4)</span> en el registro especial del PLC para maximizar la resolución de lectura:</p>
+
+    <div class="callout warning">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-text">
+            <strong>Nota</strong> — El registro especial puede variar según el modelo exacto del PLC Delta SE. Consultar el manual de programación DVP-SE para confirmar la dirección del registro de configuración HSC.
+        </div>
+    </div>
+</section>
+
+<!-- ==================== ACT 4 — DIRECCIÓN ==================== -->
+<section class="slide act4" id="act4">
+    <div class="slide-header">
+        <div class="act-number">04</div>
+        <h2>Detección de Sentido de Giro — Lógica de Contactos y Flancos</h2>
+    </div>
+
+    <h3>🧠 Principio de Funcionamiento</h3>
+    <p>Al detectar el <span class="text-blue">flanco de subida de la Fase A (X0)</span>, se lee el estado de la <span class="text-highlight">Fase B (X1)</span>:</p>
+
+    <div class="two-col">
+        <div class="col-box" style="border-left: 4px solid #00b894;">
+            <h4>🟢 X1 = 0 → Giro CW</h4>
+            <p>Si al subir A, B está en <strong>nivel bajo (0)</strong>, el giro es <span class="badge badge-green">Horario</span>.</p>
+        </div>
+        <div class="col-box" style="border-left: 4px solid #e94560;">
+            <h4>🔴 X1 = 1 → Giro CCW</h4>
+            <p>Si al subir A, B está en <strong>nivel alto (1)</strong>, el giro es <span class="badge badge-red">Antihorario</span>.</p>
+        </div>
+    </div>
+
+    <h3>💻 Implementación en Ladder</h3>
+    <p>Se utilizan 3 networks: detección de flanco de subida en X0, evaluación de estado de X1 para CW, y evaluación de estado de X1 para CCW.</p>
+
+    <div class="img-card" style="max-width: 700px; margin: 1.5rem auto;">
+        <img src="6.PNG" alt="Programa Ladder para detección de dirección de giro con flancos" width="500" height="300">
+        <div class="caption">
+            <div class="file-tag">6.PNG</div>
+            <p class="desc">Captura del programa Ladder — lógica de detección de dirección de giro con flancos.</p>
+        </div>
+    </div>
+
+    <div class="callout purple">
+        <div class="callout-icon">🔮</div>
+        <div class="callout-text">
+            <strong>Alternativa: Modo AB del PLC</strong>
+            El PLC Delta SE puede configurarse en modo AB para detectar dirección automáticamente. El resultado se lee de un bit de estado asociado al contador de alta velocidad (C251, C252, etc.).
+        </div>
+    </div>
+</section>
+
+<!-- ==================== ACT 5 — ESCALADO ==================== -->
+<section class="slide act5" id="act5">
+    <div class="slide-header">
+        <div class="act-number">05</div>
+        <h2>Escalado de la Lectura SPD → RPS y RPM</h2>
+    </div>
+
+    <h3>📐 Fórmulas Fundamentales</h3>
+
+    <div class="formula-card">
+        <div class="formula-label">Ecuaciones de Escalado</div>
+        <div class="formula-line">Pulsos contados en T ms = <strong>D<sub>n</sub></strong></div>
+        <div class="formula-line"><strong>RPS</strong> = ( D<sub>n</sub> × 1000 ) / ( PPR × 4 × T )</div>
+        <div class="formula-line"><strong>RPM</strong> = RPS × 60</div>
+        <div class="formula-desc"><strong>PPR</strong> = pulsos/revolución &nbsp;|&nbsp; <strong>×4</strong> = modo cuádruple &nbsp;|&nbsp; <strong>T</strong> = base de tiempo en ms</div>
+    </div>
+
+    <h3>📊 Tabla de Escalado — Ejemplo: PPR = 1024, Modo Cuádruple → 4096 pulsos/rev</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr><th>Base T (ms)</th><th>Fórmula RPS</th><th>Fórmula RPM</th><th>Factor de Escala</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-blue">1000</span></td><td>RPS = D<sub>n</sub> × 1000 / (4096 × 1000)</td><td>RPM = D<sub>n</sub> × 60 / 4096</td><td><code>D<sub>n</sub> / 4096</code></td></tr>
+                <tr><td><span class="badge badge-purple">700</span></td><td>RPS = D<sub>n</sub> × 1000 / (4096 × 700)</td><td>RPM = D<sub>n</sub> × 60 / 2867.2</td><td><code>D<sub>n</sub> / 2867.2</code></td></tr>
+                <tr><td><span class="badge badge-yellow">300</span></td><td>RPS = D<sub>n</sub> × 1000 / (4096 × 300)</td><td>RPM = D<sub>n</sub> × 60 / 1228.8</td><td><code>D<sub>n</sub> / 1228.8</code></td></tr>
+                <tr><td><span class="badge badge-green">200</span></td><td>RPS = D<sub>n</sub> × 1000 / (4096 × 200)</td><td>RPM = D<sub>n</sub> × 60 / 819.2</td><td><code>D<sub>n</sub> / 819.2</code></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>💻 Implementación en PLC (Escalado en Punto Flotante)</h3>
+    <p>El escalado se implementa convirtiendo el conteo entero a punto flotante, dividiendo entre el factor (PPR × 4) y multiplicando por 60 para obtener RPM.</p>
+
+    <div class="img-card" style="max-width: 700px; margin: 1.5rem auto;">
+        <img src="7.PNG" alt="Programa Ladder con bloque de escalado RPS y RPM usando punto flotante" width="500" height="300">
+        <div class="caption">
+            <div class="file-tag">7.PNG</div>
+            <p class="desc">Captura del programa Ladder — bloque completo de escalado RPS / RPM con punto flotante.</p>
+        </div>
+    </div>
+
+    <h3>📝 Tabla de Resultados Experimentales</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr><th>Base T (ms)</th><th>D<sub>n</sub> (pulsos)</th><th>RPS</th><th>RPM</th><th>RPM VFD (ref.)</th><th>Error (%)</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-blue">1000</span></td><td>________</td><td>________</td><td>________</td><td>________</td><td>________</td></tr>
+                <tr><td><span class="badge badge-purple">700</span></td><td>________</td><td>________</td><td>________</td><td>________</td><td>________</td></tr>
+                <tr><td><span class="badge badge-yellow">300</span></td><td>________</td><td>________</td><td>________</td><td>________</td><td>________</td></tr>
+                <tr><td><span class="badge badge-green">200</span></td><td>________</td><td>________</td><td>________</td><td>________</td><td>________</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ==================== ACT 6 — TIEMPO DE ESTABLECIMIENTO ==================== -->
+<section class="slide act6" id="act6">
+    <div class="slide-header">
+        <div class="act-number">06</div>
+        <h2>Tiempo de Establecimiento de la Velocidad del Motor</h2>
+    </div>
+
+    <h3>🔧 Procedimiento</h3>
+    <ol class="step-list">
+        <li>Programar el <span class="badge badge-dark">VFD ABB</span> para arrancar el motor desde <span class="text-red">0 Hz</span> hasta la <span class="text-green">frecuencia nominal</span> (ej. 60 Hz → 1800 RPM para motor de 4 polos).</li>
+        <li>Iniciar medición de velocidad mediante <span class="badge badge-dark">SPD</span> con base de tiempo <span class="badge badge-green">200 ms</span> (mayor resolución temporal).</li>
+        <li>Al activar la marcha, iniciar un <strong>temporizador TMR</strong> en el PLC.</li>
+        <li>Comparar continuamente la velocidad medida con la nominal usando <strong>comparadores</strong>.</li>
+        <li>Cuando la velocidad se estabilice dentro de una <span class="text-highlight">banda del ±2 %</span> de la nominal, detener el temporizador → registrar el <strong>tiempo de establecimiento (t<sub>s</sub>)</strong>.</li>
+    </ol>
+
+    <h3>📐 Banda de Establecimiento (±2 %)</h3>
+    <div class="formula-card" style="background: linear-gradient(135deg, #1a1a2e, #e84393);">
+        <div class="formula-label">Banda ±2% de la Velocidad Nominal</div>
+        <div class="formula-line">V<sub>nominal</sub> = <strong>1800 RPM</strong> &nbsp;(ejemplo 60 Hz, 4 polos)</div>
+        <div class="formula-line">Límite inferior = 1800 × 0.98 = <strong>1764 RPM</strong></div>
+        <div class="formula-line">Límite superior = 1800 × 1.02 = <strong>1836 RPM</strong></div>
+    </div>
+
+    <h3>💻 Ladder — Detección de Establecimiento</h3>
+    <p>Se utilizan 3 networks: temporizador activado por señal de marcha, comparadores de banda (DCMP) para detectar cuándo la velocidad entra en rango [1764, 1836], y parada del timer al estabilizar.</p>
+
+    <div class="img-card" style="max-width: 700px; margin: 1.5rem auto;">
+        <img src="8.PNG" alt="Programa Ladder para detección de tiempo de establecimiento con comparadores" width="500" height="300">
+        <div class="caption">
+            <div class="file-tag">8.PNG</div>
+            <p class="desc">Captura del Ladder — detección de tiempo de establecimiento con comparadores y temporizador.</p>
+        </div>
+    </div>
+
+    <div class="img-card" style="max-width: 600px; margin: 1.5rem auto;">
+        <img src="9.PNG" alt="Gráfica velocidad vs tiempo con marcador del tiempo de establecimiento" width="500" height="300">
+        <div class="caption">
+            <div class="file-tag">9.PNG</div>
+            <p class="desc">Gráfica velocidad vs tiempo registrada desde HMI/SCADA o PLC.</p>
+        </div>
+    </div>
+
+    <h3>📝 Resultado</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr><th>Parámetro</th><th>Valor</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Velocidad nominal (RPM)</td><td><strong>________ RPM</strong></td></tr>
+                <tr><td>Banda de tolerancia</td><td>± <strong>____ %</strong> → [ <strong>________</strong> , <strong>________</strong> ] RPM</td></tr>
+                <tr class="table-highlight"><td><strong>Tiempo de establecimiento (t<sub>s</sub>)</strong></td><td><strong>________ ms</strong></td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ==================== ACT 7 — 67% y 23% ==================== -->
+<section class="slide act7" id="act7">
+    <div class="slide-header">
+        <div class="act-number">07</div>
+        <h2>Tiempos al 67 % y 23 % de la Velocidad Nominal</h2>
+    </div>
+
+    <h3>📖 Fundamento Teórico</h3>
+    <p>Estos dos puntos corresponden a la respuesta escalón de un sistema de <strong>primer orden</strong> con retardo:</p>
+
+    <div class="two-col">
+        <div class="col-box" style="border-top: 4px solid #00b894; text-align:center;">
+            <h4>🟢 67 % ≈ 1 – e<sup>–1</sup></h4>
+            <p>Corresponde a <strong>1 constante de tiempo (τ)</strong></p>
+            <div class="progress-bar"><div class="fill fill-67"></div></div>
+            <div style="margin-top:0.5rem;"><span class="badge badge-green">67% de V<sub>nom</sub></span></div>
+        </div>
+        <div class="col-box" style="border-top: 4px solid #a29bfe; text-align:center;">
+            <h4>🟣 23 % ≈ 1 – e<sup>–0.25</sup></h4>
+            <p>Corresponde a <strong>0.25 τ</strong> (usado en método de dos puntos de Smith)</p>
+            <div class="progress-bar"><div class="fill fill-23"></div></div>
+            <div style="margin-top:0.5rem;"><span class="badge badge-purple">23% de V<sub>nom</sub></span></div>
+        </div>
+    </div>
+
+    <div class="callout purple">
+        <div class="callout-icon">🔮</div>
+        <div class="callout-text">
+            <strong>Próximo paso — Sesión 2</strong>
+            Estos valores alimentarán el <strong>método de los dos puntos de Smith</strong> para sintonizar un controlador PID que regule la velocidad del motor a través del VFD ABB.
+        </div>
+    </div>
+
+    <h3>📐 Cálculo de Umbrales</h3>
+    <div class="formula-card" style="background: linear-gradient(135deg, #0f3460, #00cec9);">
+        <div class="formula-label">Umbrales de Velocidad</div>
+        <div class="formula-line">V<sub>nominal</sub> = <strong>________ RPM</strong></div>
+        <div class="formula-line"><span style="color:#55efc4;">V<sub>67%</sub></span> = V<sub>nominal</sub> × 0.67 = <strong>________ RPM</strong></div>
+        <div class="formula-line"><span style="color:#a29bfe;">V<sub>23%</sub></span> = V<sub>nominal</sub> × 0.23 = <strong>________ RPM</strong></div>
+    </div>
+
+    <h3>💻 Ladder — Detección de Cruces de Umbral</h3>
+    <p>Se utilizan 3 networks: temporizador desde la señal de arranque, comparador para cruce del 23 % (almacenar tiempo en D300), y comparador para cruce del 67 % (almacenar tiempo en D310).</p>
+
+    <div class="img-card" style="max-width: 700px; margin: 1.5rem auto;">
+        <img src="10.PNG" alt="Programa Ladder para detección de cruce de umbrales 23% y 67%" width="500" height="300">
+        <div class="caption">
+            <div class="file-tag">10.PNG</div>
+            <p class="desc">Captura del Ladder — detección de cruce de umbrales 23 % y 67 %.</p>
+        </div>
+    </div>
+
+    <div class="img-card" style="max-width: 600px; margin: 1.5rem auto;">
+        <img src="11.PNG" alt="Gráfica velocidad vs tiempo con marcadores visuales al 23% y 67%" width="500" height="300">
+        <div class="caption">
+            <div class="file-tag">11.PNG</div>
+            <p class="desc">Gráfica velocidad vs tiempo con marcadores al 23 % y 67 %.</p>
+        </div>
+    </div>
+
+    <h3>📝 Tabla de Resultados</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr><th>Umbral</th><th>Porcentaje</th><th>Valor (RPM)</th><th>Tiempo (ms)</th><th>Equivalencia</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-purple">V<sub>23%</sub></span></td><td>23 %</td><td>________</td><td>________</td><td>≈ 0.25 τ</td></tr>
+                <tr><td><span class="badge badge-green">V<sub>67%</sub></span></td><td>67 %</td><td>________</td><td>________</td><td>≈ 1 τ</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout success">
+        <div class="callout-icon">🎓</div>
+        <div class="callout-text">
+            <strong>Preparación para la Sesión 2</strong>
+            Con los valores de t<sub>23%</sub> y t<sub>67%</sub>, aplicaremos el <strong>método de los dos puntos de Smith</strong> para estimar K, τ y L del modelo FOPDT, y calcular K<sub>p</sub>, T<sub>i</sub> y T<sub>d</sub> del PID.
+        </div>
+    </div>
+</section>
+
+<!-- ==================== RESUMEN ==================== -->
+<section class="slide" id="summary">
+    <div class="slide-header">
+        <div class="act-number" style="background: linear-gradient(135deg, #fdcb6e, #f39c12);">✅</div>
+        <h2>Checklist de Entregables — Sesión 1</h2>
+    </div>
+
+    <ul class="checklist">
+        <li>Fotos del encoder y placa de datos <span class="badge badge-dark file-tag">1.PNG, 2.PNG</span></li>
+        <li>Capturas de osciloscopio CW y CCW <span class="badge badge-dark file-tag">3.PNG, 4.PNG</span></li>
+        <li>Diagrama de conexión encoder → PLC <span class="badge badge-dark file-tag">5.PNG</span></li>
+        <li>Programa Ladder detección de dirección <span class="badge badge-dark file-tag">6.PNG</span></li>
+        <li>Programa Ladder escalado RPS/RPM <span class="badge badge-dark file-tag">7.PNG</span></li>
+        <li>Programa Ladder tiempo de establecimiento <span class="badge badge-dark file-tag">8.PNG</span></li>
+        <li>Gráfica velocidad vs tiempo <span class="badge badge-dark file-tag">9.PNG</span></li>
+        <li>Programa Ladder detección 23 % / 67 % <span class="badge badge-dark file-tag">10.PNG</span></li>
+        <li>Gráfica con marcadores de umbral <span class="badge badge-dark file-tag">11.PNG</span></li>
+        <li>Tablas de resultados completas <span class="badge badge-yellow file-tag">Informe</span></li>
+    </ul>
+
+    <div class="separator"></div>
+
+    <h3>🚀 Próxima Sesión</h3>
+    <div class="callout purple">
+        <div class="callout-icon">🔮</div>
+        <div class="callout-text">
+            <strong>Sesión 2 — Sintonía de PID por Método de los Dos Puntos de Smith</strong>
+            <br>Estimaremos K, τ y L del modelo FOPDT a partir de t<sub>23%</sub> y t<sub>67%</sub>, y calcularemos las ganancias K<sub>p</sub>, T<sub>i</sub> y T<sub>d</sub> para el PID del control de velocidad del motor trifásico vía VFD ABB.
+        </div>
+    </div>
+</section>
+
+<footer>
+    <p>Guía de Laboratorio — Encoder 2 Fases + VFD ABB + PLC Delta SE · Sesión 1</p>
+    <p style="margin-top: 0.5rem; opacity: 0.6;">Documento generado para uso académico</p>
+</footer>
+
+</body>
+</html>
